@@ -19,8 +19,7 @@ typedef struct queue {
 char screen[SCREEN_HEIGHT][SCREEN_WIDTH];
 int in_hackers, in_serfs, boat_size, n_hackers, n_serfs, is_captain, frames, status, hackers_on_the_boat, serfs_on_the_boat, boat_x_position, flag;
 
-sem_t hackers, serfs;
-sem_t move_lock;
+sem_t hackers, serfs, move_lock;
 
 pthread_mutex_t mutex, hackers_queue_lock, serfs_queue_lock;
 
@@ -44,18 +43,6 @@ int dequeue(queue *q){
 	return aux;
 }
 
-int first(queue q){
-	return q.order[q.start];
-}
-
-int second(queue q){
-	return q.order[(q.start + 1) % MAX_QUEUE];
-}
-
-int isEmpty(queue q){
-	return q.start == q.end;
-}
-
 /*Funcao que retorna o numero de elementos na fila*/
 int length(queue q){
 	if(q.end >= q.start)
@@ -70,10 +57,9 @@ void rowBoat() {
 	flag = 0;
 }
 
+// Inicializa a "moldura" e o rio na tela
 void initScreen() {
-
 	int i, j;
-
 	for (i = 0; i < SCREEN_HEIGHT; i ++) {
 		for (j = 0; j < SCREEN_WIDTH; j ++) {
 			if (i == 0 || i == SCREEN_HEIGHT - 1) {
@@ -156,6 +142,7 @@ void serfPosition(int position, int *x, int *y){
 	}
 }
 
+// Atualiza a tela de acordo com o estado do sistema
 void changeScreen() {
 
 	int i, j, x, y;
@@ -167,21 +154,22 @@ void changeScreen() {
 		drawBoat(0);
 	} else {
 		drawBoat(frames);
-		if (boat_x_position + frames == SCREEN_WIDTH - 50) {
+		if (boat_x_position + frames == SCREEN_WIDTH - 50) { // Verifica se o barco chegou na margem direita
 			hackers_on_the_boat = 0;
 			serfs_on_the_boat = 0;
 			status = 1;
-		} else if (boat_x_position + frames == SCREEN_WIDTH - 80) {
+		} else if (boat_x_position + frames == SCREEN_WIDTH - 80) { // Verifica se o barco chegou na margem esquerda
 			status = 0;
 			frames = 0;
-			sem_post(&move_lock);
+			sem_post(&move_lock); // Libera o barco
 		}
-		if (status == 0)
+		if (status == 0) // A variavel status controla se o barco vai para direita ou para esquerda
 			frames ++;
 		else 
 			frames --;	
 	}
 
+	// Desenha a fila de hackers
 	pthread_mutex_lock(&hackers_queue_lock);
 	for(i = 0; i < length(hackers_queue); i++){
 		hackerPosition(i, &x, &y);
@@ -189,6 +177,7 @@ void changeScreen() {
 	}
 	pthread_mutex_unlock(&hackers_queue_lock);
 
+	// Desenha a fila de serfs
 	pthread_mutex_lock(&serfs_queue_lock);
 	for(i = 0; i < length(serfs_queue); i++){
 		serfPosition(i, &x, &y);
@@ -196,10 +185,10 @@ void changeScreen() {
 	}
 	pthread_mutex_unlock(&serfs_queue_lock);
 
+	// Desenha as pessoas no barco
 	for (i = 0; i < hackers_on_the_boat; i ++) {
 		drawHacker((SCREEN_HEIGHT / 2) - 1, boat_x_position + 5 + 10 * i + frames);
 	}
-
 	for (j = i; j < serfs_on_the_boat + hackers_on_the_boat; j ++) {
 		drawSerf((SCREEN_HEIGHT / 2) - 1, boat_x_position + 5 + 10 * j + frames);
 	}
@@ -216,6 +205,7 @@ void printScreen () {
     }
 }
 
+// Funcao baseada na resposta do livro The Little Book on Semaphores, de Allen B. Downey.
 void* hacker(void* id) {
 
 	int i, *aux;
@@ -269,6 +259,7 @@ void* hacker(void* id) {
 	return NULL;
 }
 
+// Funcao baseada na resposta do livro The Little Book on Semaphores, de Allen B. Downey.
 void* serf(void* id) {
 
 	int i, *aux;
