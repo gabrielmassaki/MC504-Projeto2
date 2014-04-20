@@ -17,3 +17,5 @@ Todas as threads devem embarcar, e somente apos todas as threads embarcarem que 
 Depois que todas as threads embarcaram, alguma delas deve chamar a funcao remar.
 
 Fonte: The Little Book on Semaphores, de Allen B. Downey.
+
+Obs: O terminal precisa ter no minimo 150 colunas e 30 linhas
